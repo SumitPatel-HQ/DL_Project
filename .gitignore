@@ -1,22 +1,60 @@
+# Python environments and bytecode
 .venv/
 __pycache__/
 *.py[cod]
+*.egg-info/
+
+# Python tooling and test coverage
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Node.js and Next.js generated files
 node_modules/
 .next/
 *.tsbuildinfo
-frontend/next-env.d.ts
+/frontend/next-env.d.ts
+/frontend/out/
+/frontend/coverage/
+
+# ONNX WebAssembly runtime copied from node_modules by the frontend scripts
+/frontend/public/ort/
+
+# Local deployment metadata
+.vercel/
+
+# Environment variables (keep the example configuration)
 .env
 .env.*
 !.env.example
-/data/
-artifacts/models/*
-!artifacts/models/.gitkeep
-artifacts/evaluations/*
-!artifacts/evaluations/.gitkeep
-artifacts/system/local*.json
-*.sqlite*
 
-frontend/public/ort/
+# Local datasets, trained checkpoints, and generated evaluation runs
+/data/
+
+
+# SQLite databases and their temporary files
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
+
+# Logs and temporary editor files
+*.log
+*.swp
+*.swo
+*~
+
+# Operating system metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+data.rar

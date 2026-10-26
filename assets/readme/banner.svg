@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" role="img" aria-labelledby="title desc">
+  <title id="title">Keyword Spotting</title>
+  <desc id="desc">An LSTM speech project for audio analysis, live voice control, and model evaluation.</desc>
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#101b2d"/><stop offset="1" stop-color="#172b46"/></linearGradient>
+    <linearGradient id="wave"><stop stop-color="#60a5fa"/><stop offset="1" stop-color="#5eead4"/></linearGradient>
+  </defs>
+  <rect width="1200" height="320" rx="20" fill="url(#bg)"/>
+  <circle cx="1090" cy="25" r="230" fill="#2563eb" opacity=".08"/>
+  <circle cx="1130" cy="310" r="200" fill="#14b8a6" opacity=".06"/>
+  <text x="66" y="74" font-family="Segoe UI,Arial,sans-serif" font-size="14" font-weight="700" letter-spacing="3" fill="#5eead4">DEEP LEARNING · SPEECH AUDIO</text>
+  <text x="62" y="146" font-family="Segoe UI,Arial,sans-serif" font-size="58" font-weight="700" fill="#f8fafc">Keyword Spotting</text>
+  <text x="66" y="190" font-family="Segoe UI,Arial,sans-serif" font-size="22" fill="#b6c6dc">From audio to detections. From keywords to actions.</text>
+  <text x="66" y="260" font-family="Segoe UI,Arial,sans-serif" font-size="16" fill="#b6c6dc">LSTM + MFCC     /     CPU inference     /     Web interface</text>
+  <g stroke="url(#wave)" stroke-width="10" stroke-linecap="round">
+    <path d="M845 147v26 M867 126v68 M889 142v36 M911 95v130 M933 119v82 M955 72v176 M977 108v104 M999 130v60 M1021 90v140 M1043 120v80 M1065 142v36 M1087 151v18"/>
+  </g>
+</svg>

@@ -1,216 +1,165 @@
-# Keyword Spotting
+![Keyword Spotting — LSTM speech analysis and voice control](assets/readme/banner.svg)
 
-Local LSTM keyword spotting for recorded audio and bounded in-app voice control.
-Ticket 1 provides the API health contract, Next.js shell and CPU-only tooling.
-Ticket 2 adds Speech Commands subset manifests, speaker-disjoint splits, cached
-MFCC features, train-only normalization and continuous-annotation validation.
-See [data preparation and collection instructions](docs/data/README.md).
-Natural continuous speech comes from automatically annotated AMI meetings.
-Ticket 3 adds CPU LSTM training, self-describing checkpoints and isolated
-Evaluation Runs. See [E01 vs E02 results](docs/evaluations/isolated-v1/README.md):
-E02 reaches test macro-F1 0.740, below the 0.85 target.
-Ticket 4 adds the experimental sliding-window detector and the continuous-event
-gate. See [continuous results](docs/evaluations/continuous-v1/README.md): on held-out
-natural AMI speech, event-F1 is 0.010 with 2,216 false alarms/hour. The gate
-decision is no-go for continuous spotting as a working feature
-([ADR-0006](docs/adr/0006-sliding-window-gate-no-go.md)). Ticket 5 adds recording
-jobs and persistence. Ticket 6 adds the web app: Audio Analysis (`/analyze`) with a
-linked waveform, Detection table and playback; Voice Control (`/live`) with an
-explicit mic session over a loopback WebSocket; and the Evaluation dashboard
-(`/dashboard`) built only from stored Evaluation Runs. See the
-[API contract](docs/backend-api.md).
-Ticket 7 adds the [validation report](docs/evaluations/validation-report.md)
-with per-story verdicts, the rerun proof, and the documented limits, plus the
-[faculty demo script](docs/demo.md).
+<p align="center">
+  <strong>Detect spoken keywords. Explore audio. Control an interactive demo with your voice.</strong>
+</p>
 
-## Setup on Windows
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white" alt="Python 3.13">
+  <img src="https://img.shields.io/badge/PyTorch-CPU-EE4C2C?logo=pytorch&logoColor=white" alt="PyTorch CPU">
+  <img src="https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white" alt="FastAPI">
+  <img src="https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white" alt="Next.js 16">
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
+</p>
 
-Install Node.js 24 LTS and [uv](https://docs.astral.sh/uv/getting-started/installation/).
-Run from the repository root in PowerShell:
+<p align="center">
+  <a href="#features">Features</a> ·
+  <a href="#results">Results</a> ·
+  <a href="#getting-started">Quick Start</a> ·
+  <a href="#using-the-app">Usage</a>
+</p>
 
-```powershell
-uv python install 3.13
-npm run setup
-npm run check
-npm run sysinfo
+## Overview
+
+Keyword Spotting is a deep learning project that recognizes six spoken words:
+**left**, **right**, **up**, **down**, **go**, and **stop**.
+
+It combines MFCC audio features with an LSTM classifier and a web app for exploring
+recordings, trying live voice interactions, and comparing model performance.
+**Unknown** and **Silence** classes help reject audio outside the keyword vocabulary.
+
+## Features
+
+- **Audio analysis** — Upload WAV recordings and explore detections with timestamps, waveform regions, and playback.
+- **Live voice control** — Use microphone input to navigate slides, adjust volume, and play or pause the in-app demo.
+- **Evaluation dashboard** — Compare models using training curves, confusion matrices, per-class metrics, and CPU measurements.
+- **CPU inference** — Run the local model without a GPU.
+- **Optional Windows integration** — Try volume, PowerPoint slideshow, and media controls with explicit permission per session.
+- **Deployment support** — Use ONNX for deployed inference and run live microphone scoring in the browser.
+
+## How it works
+
+```text
+Audio → 16 kHz mono → MFCC features → LSTM classifier → Keyword detections
 ```
 
-`setup` installs the locked Python environment in `backend/.venv` and runs `npm ci`
-in `frontend`. No environment activation is needed. The first install needs internet
-and downloads the CPU PyTorch wheel from its explicit
-[CPU index](https://pytorch.org/get-started/locally/). Subsequent runtime is local.
-The project uses Python 3.13.
-Stop development servers before rerunning setup on Windows so native package files
-can be replaced.
+The local FastAPI service handles inference, recording jobs, and live audio over
+WebSocket. The Next.js interface provides the analysis workspace, live demo, and
+evaluation dashboard. SQLite stores local recording metadata and results.
 
-Start these in separate terminals, both at the repository root:
+## Results
+
+![Model comparison and LIVE3 confusion matrix from saved test evaluations](assets/readme/model-results.png)
+
+All three models below were evaluated on the same **1,017 isolated test clips**.
+
+| Model | Test accuracy | Test macro-F1 |
+| :--- | ---: | ---: |
+| E01 | 0.644 | 0.641 |
+| E02 | 0.734 | 0.740 |
+| **LIVE3 — local app model** | **0.781** | **0.797** |
+
+The isolated macro-F1 target is **0.85**, which remains unmet. Continuous speech
+is more challenging: E02 achieved event-F1 **0.010**, and the experimental temporal
+prototype achieved **0.057** against a **0.70** target. Continuous spotting and
+external voice actions remain experimental.
+
+## Tech stack
+
+| Layer | Technologies |
+| :--- | :--- |
+| Machine learning | PyTorch, LSTM, MFCC, NumPy, SciPy |
+| Backend | Python 3.13, FastAPI, WebSocket, SQLite |
+| Frontend | Next.js 16, React 19, TypeScript |
+| Deployment inference | ONNX Runtime, ONNX Runtime Web |
+| Tooling | uv, Ruff, mypy, pytest, ESLint |
+
+## Getting started
+
+### Prerequisites
+
+- **Node.js 22.13.0+**
+- **[uv](https://docs.astral.sh/uv/getting-started/installation/)**
+- **Python 3.13**, installable with the command below
+- **Windows 10/11** if you want to use the optional Windows controls
+
+### 1. Clone and install
+
+Run in PowerShell:
+
+```powershell
+git clone https://github.com/SumitPatel-HQ/DL.git
+cd DL
+
+uv python install 3.13
+npm run setup
+```
+
+Setup installs the locked backend environment and frontend dependencies. The first
+installation requires internet access; virtual environment activation is automatic.
+
+> **Local model required:** Analysis and live inference expect
+> `artifacts/models/live3/model.pt` and `artifacts/models/live3/detector.json`.
+> These local artifacts are not included in Git. The app reports model
+> unavailability when they are missing.
+
+### 2. Start the backend
 
 ```powershell
 npm run api
 ```
 
+### 3. Start the frontend
+
+Open a second terminal in the repository root:
+
 ```powershell
 npm run web
 ```
 
-Open http://127.0.0.1:3000. The API serves http://127.0.0.1:8000/api/health
-and API docs at http://127.0.0.1:8000/docs. Both launch commands bind to IPv4
-loopback, `127.0.0.1`. The API launcher fixes port 8000; the web dev/start commands
-default to port 3000. Use these IPv4 addresses, not `localhost` or `[::1]`.
-`API_BASE_URL` accepts only `http://127.0.0.1:8000` with an optional trailing slash.
-The backend also filters HTTP Host headers to `127.0.0.1`. That filter is separate
-from socket binding; its TestClient test does not prove the listening address.
-Stop each with Ctrl+C. If port 3000 is occupied, Next.js reports its alternate port.
-The overview page fetches API health on the server. The three app slices call the
-API from the browser; the API allows only the `127.0.0.1:3000` and `localhost:3000`
-origins.
-Optional server-side configuration is documented in `frontend/.env.example`.
+Visit **[localhost:3000](http://localhost:3000)**.
 
-## Health and model setup
+## Using the app
 
-HTTP 200 from `/api/health` means the API is running. The separate model status is
-`unavailable`, with code `checkpoint_not_installed` and an explicit `setup_action`.
-No trained labels are advertised. A disconnected API has a distinct web-page state.
-The frontend also accepts `model.status: "ready"` with `code: "model_ready"` and
-displays "Model ready". This defines the future response contract; the scaffold
-backend continues to return unavailable. Unavailable responses require
-`code: "checkpoint_not_installed"` and a string `setup_action`.
+1. **Analyze:** Open `/analyze`, upload a PCM WAV recording, select keywords, and inspect the detections.
+2. **Try live input:** Open `/live`, start listening, grant microphone access, and speak one of the six keywords.
+3. **Explore results:** Open `/dashboard` to inspect or import the saved Evaluation Runs.
 
-[Ticket 3](docs/P0_tickets/03-train-isolated-eval.md) trains checkpoints into
-`artifacts/models/` with ordered labels, feature config and normalization.
-`ml.checkpoint.load_checkpoint` validates and reloads them without retraining.
-The API does not load a checkpoint yet, so health still reports unavailable.
-Ticket 5 connects the active model to the API.
+Live actions apply to the in-app demo by default. Windows controls require a
+separate opt-in and one selected target.
 
-## Training and isolated evaluation
+## Project structure
 
-Prepare the cache first (see [data preparation](docs/data/README.md)). Then, from
-`backend/`:
-
-```powershell
-uv run --locked python -m ml.train --config ml/configs/e01.json --features ../data/isolated/features --output ../artifacts/models/e01
-uv run --locked python -m ml.evaluate run --checkpoint ../artifacts/models/e01/model.pt --features ../data/isolated/features --split test --output ../artifacts/evaluations/e01-test.json
+```text
+├── backend/
+│   ├── app/          # API, recording jobs, storage, and live sessions
+│   ├── ml/           # Data pipelines, features, models, and evaluation
+│   └── tests/        # Backend tests
+├── frontend/
+│   ├── app/          # Next.js pages
+│   ├── components/   # Analysis, live, and dashboard UI
+│   └── lib/          # API clients and browser audio processing
+├── scripts/          # Development, reproduction, and export utilities
+├── data/             # Local datasets and cached features (ignored)
+└── artifacts/        # Local models and generated artifacts
 ```
 
-Training uses cross-entropy, Adam, validation-loss early stopping, fixed seeds,
-deterministic kernels and a fixed thread count. It writes `model.pt`,
-`training.json` and per-epoch `curves.csv`. Reruns reproduce the same losses and
-metrics. Evaluation accepts only validation or test splits. It refuses caches
-whose manifest or normalization differ from the checkpoint. It reports macro-F1,
-per-class precision/recall/F1 including Unknown and Silence, the confusion
-matrix, training curves, CPU latency and peak RAM. `ml.evaluate compare` refuses
-runs from different splits. Choose between models on validation, not test.
+## Development
 
-## Continuous-event evaluation
-
-From `backend/`, tune the detector on validation, then run the frozen detector once on test:
+Run linting, type checks, and tests:
 
 ```powershell
-uv run --locked python -m ml.evaluate_continuous tune --checkpoint ../artifacts/models/e02/model.pt --root ../data/continuous-ami --isolated-manifest ../data/isolated/manifest.json --output ../artifacts/evaluations/detector-e02.json
-uv run --locked python -m ml.evaluate_continuous run --checkpoint ../artifacts/models/e02/model.pt --root ../data/continuous-ami --isolated-manifest ../data/isolated/manifest.json --detector ../artifacts/evaluations/detector-e02.json --split test --output ../artifacts/evaluations/e02-continuous-test.json
+npm run check
 ```
 
-`tune` accepts validation Recordings only. `run` refuses a detector tuned for
-another checkpoint or tolerance, or tuned on Recordings that overlap test. It
-reports event precision, recall and F1 with the ±0.5 s center-tolerance rule. It
-also reports false alarms/hour on annotated negatives and an error review.
+Build the frontend:
 
-## Reproduction
+```powershell
+npm run build --prefix frontend
+```
 
-From the repository root, after preparing data and the E02 checkpoint:
+Reproduce the E02 evaluations after preparing the local data and checkpoint:
 
 ```powershell
 uv run --project backend python scripts/reproduce.py
 ```
-
-This reruns the E02 isolated test Evaluation Run and the E02 continuous
-test run from the saved checkpoint and frozen configs, then checks every
-metric field against the committed files within exact tolerance. It exits
-0 with `RERUN PASS` only when all fields match (timings, timestamps, and
-checkpoint file bytes are machine measurements and are excluded). It
-needs the ignored local `data/` and `artifacts/models/` trees, so it is a
-standalone script, not part of `npm run check`.
-
-Full per-story verdicts, the failed-acceptance reports for the unmet
-hypotheses (isolated macro-F1 0.740 vs 0.85, event-F1 0.010 vs 0.70),
-the target-hardware gap, the unexecuted microphone protocol, and data
-attribution are in the [validation report](docs/evaluations/validation-report.md).
-The faculty walkthrough (upload to Detections to live actions to
-dashboard) is in the [demo script](docs/demo.md). The P1-03 clean-vs-noisy
-comparison and its protocol are in [noise-v1](docs/evaluations/noise-v1/README.md).
-The P1-04 temporal BiLSTM prototype (experimental, event-F1 0.057 on test, target unmet) is
-in [temporal-v1](docs/evaluations/temporal-v1/README.md) and
-[ADR-0007](docs/adr/0007-temporal-prototype-keep-experimental.md).
-
-P2-01 [vocabulary expansion](docs/data/vocabulary-expansion.md) supports offline
-eleven-class dataset preparation, training and evaluation. New-word recordings
-and reviewed runs are still missing, so `next`, `pause`, and `urgent` remain gated.
-The app continues to serve the six Keywords from E02.
-
-P2-02 adds optional Windows volume, existing PowerPoint slideshow and Windows
-media-session actions under [ADR-0009](docs/adr/0009-experimental-opt-in-os-actions.md).
-Start listening opens only the mic. In Voice Control, refresh targets, choose one,
-select its actions and explicitly consent to experimental OS control. `up/down`
-can then change the selected Windows endpoint's volume; `right/left` can change
-slides; `go/stop` can play/pause the selected media session. Only one target is
-permitted per session. Stop or Revoke clears permissions; restarting keeps OS
-control off. No application is launched and no shell text or paths are accepted.
-
-The project owner authorized implementation ahead of the original gates. The
-event-F1 target remains unmet and the target-hardware requirement of at most
-1 false action per 30 minutes of controlled negative microphone testing remains
-unmeasured. This is experimental integration, not validated external voice control.
-The UI includes a negative-session recorder and persistent audit/report links.
-See [setup and validation](docs/os-external-actions.md) for supported targets,
-permissions, revocation limits and the scripted hardware test.
-
-## Checks and reproducibility
-
-The [recording API guide](docs/backend-api.md) documents uploads, analysis jobs,
-SQLite storage, playback, deletion, limits, and stable error codes. Continuous
-analysis remains experimental under ADR-0006.
-
-`npm run check` runs Ruff lint and format checks, strict Python typechecking,
-TypeScript ESLint and typechecking, health-client contract tests using Node's test
-runner, and the full pytest suite. CI runs the same
-command on Windows and also builds the frontend. To run one test file:
-
-```powershell
-uv run --project backend pytest backend/tests/test_health.py
-```
-
-To check a production build, run `npm run build --prefix frontend`. It needs no
-running API. Start it with `npm run start --prefix frontend`.
-
-Known tooling limitation at setup: `npm audit` reports a high-severity `braces`
-advisory through the development-only Next.js ESLint plugin. The registry currently
-offers no patched `braces` release. Recheck on dependency updates; this package is
-not in the production runtime dependency tree.
-
-`npm run sysinfo` writes ignored `artifacts/system/local.json` with OS, CPU,
-total/available RAM, installed package versions and CUDA status. The reviewed
-baseline is in [artifacts/system/baseline.json](artifacts/system/baseline.json).
-It describes the development machine, not proof of performance on the target
-Ryzen 5 5500U/16GB laptop. Ticket 3 Evaluation Runs record measured CPU training
-time, inference latency and peak RAM.
-
-The [baseline config](backend/ml/configs/baseline.json) records ordered classes,
-the frozen MFCC-v1 contract, fixed seed and CPU LSTM dimensions. Threshold
-and consistency remain unset until validation calibration. Ticket 2 freezes
-train-only normalization and the shared feature implementation.
-Future checkpoints and Evaluation Runs must store the exact config, split version,
-checkpoint hash, code revision and timestamp.
-
-## Layout and scope
-
-- `backend/app/`: FastAPI routes, response models, bounded recording worker and SQLite metadata.
-- `backend/ml/`: configs, data, features, networks, train/evaluate/infer/spotting.
-- `frontend/`: Next.js routes, components and server-side health client.
-- `artifacts/`: local models, Evaluation Runs and system information.
-- `scripts/`: loopback API launch, common checks and system capture.
-- `data/`: ignored local audio and derived data, created when data work begins.
-
-See the [spec](docs/KWS_SPEC.md), [implementation plan](.research/main/KWS_IMPLEMENTATION_PLAN.md),
-[overview](.research/main/KWS_PROJECT_OVERVIEW.md), [PRD](.research/main/KWS_PRD.md),
-[SRD](.research/main/KWS_SRD.md), [domain language](CONTEXT.md),
-[ADRs](docs/adr/) and [data policy](docs/data-policy.md).
